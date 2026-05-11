@@ -21,6 +21,8 @@ const categories = [
   { name: 'FPS',           slug: 'fps',            sort_order: 3 },
   { name: 'RPG',           slug: 'rpg',            sort_order: 4 },
   { name: 'Strategy',      slug: 'strategy',       sort_order: 5 },
+  { name: 'SPORT',         slug: 'sport',          sort_order: 6 },
+  { name: 'PLATFORM',      slug: 'platform',       sort_order: 7 },
 ];
 
 const seedCategories = db.transaction(() => {
@@ -107,6 +109,27 @@ const games = [
     icon_url: '@drawable/logo_cod', banner_url: '@drawable/banner_codm',
     gradient_start: '#111827', gradient_end: '#374151', accent_color: '#9CA3AF',
     is_popular: 0, is_new: 0, requires_zone_id: 0, sort_order: 9,
+  },
+  {
+    name: 'FC 25', slug: 'fc-25', category_slug: 'sport',
+    description: 'Game olahraga sepak bola terbaru. Top up FC Points dengan mudah.',
+    icon_url: '@drawable/fc_logo', banner_url: '@drawable/banner_fc',
+    gradient_start: '#064E3B', gradient_end: '#10B981', accent_color: '#6EE7B7',
+    is_popular: 0, is_new: 0, requires_zone_id: 0, sort_order: 10,
+  },
+  {
+    name: 'Magic Chess: Go Go', slug: 'magic-chess-go-go', category_slug: 'moba',
+    description: 'Game auto-battler seru. Top up DM Points dengan mudah.',
+    icon_url: '@drawable/mcgg_logo', banner_url: '@drawable/banner_mcgg',
+    gradient_start: '#4C1D95', gradient_end: '#7C3AED', accent_color: '#DDD6FE',
+    is_popular: 0, is_new: 0, requires_zone_id: 0, sort_order: 11,
+  },
+  {
+    name: 'Roblox', slug: 'roblox', category_slug: 'platform',
+    description: 'Platform game virtual. Top up Robux dengan mudah.',
+    icon_url: '@drawable/logo_roblox', banner_url: '@drawable/banner_roblox',
+    gradient_start: '#374151', gradient_end: '#4B5563', accent_color: '#9CA3AF',
+    is_popular: 0, is_new: 0, requires_zone_id: 0, sort_order: 12,
   },
 ];
 
@@ -198,11 +221,7 @@ const insertBanner = db.prepare(`
     (@game_id, @title, @subtitle, @discount_text, @image_url, @gradient_start, @gradient_end, @accent_color, @sort_order)
 `);
 
-const checkBanner = db.prepare('SELECT COUNT(*) as cnt FROM banners');
-const bannerCount = checkBanner.get().cnt;
-
-if (bannerCount === 0) {
-  const banners = [
+const banners = [
     { game_slug: 'mobile-legends',    title: 'Mobile Legends', subtitle: 'Top Up Diamond & Dapatkan Bonus Ekstra!',      discount_text: 'BONUS 20%',     image_url: '@drawable/banner_ml', gradient_start: '#1E3A8A', gradient_end: '#7C3AED', accent_color: '#60A5FA', sort_order: 1 },
     { game_slug: 'free-fire',         title: 'Free Fire',      subtitle: 'Flash Sale Diamond FF Hanya Hari Ini!',        discount_text: 'HEMAT 15%',     image_url: '@drawable/banner_ff', gradient_start: '#064E3B', gradient_end: '#0E7490', accent_color: '#34D399', sort_order: 2 },
     { game_slug: 'pubg-mobile',       title: 'PUBG Mobile',    subtitle: 'Beli UC Sekarang & Raih Outfit Legendary!',    discount_text: 'PROMO SPESIAL', image_url: '@drawable/banner_pubg', gradient_start: '#78350F', gradient_end: '#B45309', accent_color: '#FBBF24', sort_order: 3 },
@@ -212,20 +231,25 @@ if (bannerCount === 0) {
     { game_slug: 'clash-of-clans',    title: 'Clash of Clans', subtitle: 'Flash Sale Permata CoC Hanya Hari Ini!',       discount_text: 'HEMAT 10%',     image_url: '@drawable/banner_coc', gradient_start: '#064E3B', gradient_end: '#0E7490', accent_color: '#34D399', sort_order: 7 },
     { game_slug: 'league-of-legends', title: 'League of Legends', subtitle: 'Flash Sale RP LoL Hanya Hari Ini!',         discount_text: 'HEMAT 30%',     image_url: '@drawable/banner_lol', gradient_start: '#064E3B', gradient_end: '#0E7490', accent_color: '#34D399', sort_order: 8 },
     { game_slug: 'call-of-duty-mobile', title: 'Call of Duty Mobile', subtitle: 'Flash Sale CP CODM Hanya Hari Ini!',   discount_text: 'HEMAT 15%',     image_url: '@drawable/banner_codm', gradient_start: '#064E3B', gradient_end: '#0E7490', accent_color: '#34D399', sort_order: 9 },
+    { game_slug: 'fc-25',             title: 'FC 25',          subtitle: 'Flash Sale FC Points Hanya Hari Ini!',         discount_text: 'HEMAT 15%',     image_url: '@drawable/banner_fc', gradient_start: '#065F46', gradient_end: '#059669', accent_color: '#6EE7B7', sort_order: 10 },
+    { game_slug: 'magic-chess-go-go', title: 'Magic Chess: Go Go', subtitle: 'Flash Sale DM Points Hanya Hari Ini!',         discount_text: 'HEMAT 15%',     image_url: '@drawable/banner_mcgg', gradient_start: '#5B21B6', gradient_end: '#8B5CF6', accent_color: '#DDD6FE', sort_order: 11 },
+    { game_slug: 'roblox',             title: 'Roblox',         subtitle: 'Flash Sale Robux Hanya Hari Ini!',             discount_text: 'HEMAT 15%',     image_url: '@drawable/banner_roblox', gradient_start: '#374151', gradient_end: '#111827', accent_color: '#9CA3AF', sort_order: 12 },
   ];
+
+  const checkBannerExists = db.prepare('SELECT id FROM banners WHERE title = ?');
 
   const seedBanners = db.transaction(() => {
     for (const b of banners) {
-      const gameRow = getGameId.get(b.game_slug);
-      const { game_slug, ...bannerData } = b;
-      insertBanner.run({ ...bannerData, game_id: gameRow ? gameRow.id : null });
+      const existing = checkBannerExists.get(b.title);
+      if (!existing) {
+        const gameRow = getGameId.get(b.game_slug);
+        const { game_slug, ...bannerData } = b;
+        insertBanner.run({ ...bannerData, game_id: gameRow ? gameRow.id : null });
+      }
     }
   });
   seedBanners();
   console.log('✅ Banners seeded');
-} else {
-  console.log('⏭️  Banners already exist, skipping');
-}
 
 // ====================
 // DEMO USERS
