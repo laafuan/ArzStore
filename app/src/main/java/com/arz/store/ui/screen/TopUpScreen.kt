@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -253,13 +254,9 @@ fun TopUpScreen(
     }
 
     if (showErrorDialog != null) {
-        AlertDialog(
-            onDismissRequest = { showErrorDialog = null },
-            title = { Text("Error") },
-            text = { Text(showErrorDialog!!) },
-            confirmButton = {
-                TextButton(onClick = { showErrorDialog = null }) { Text("OK") }
-            }
+        ErrorDialog(
+            message = showErrorDialog!!,
+            onDismiss = { showErrorDialog = null }
         )
     }
 
@@ -278,7 +275,6 @@ fun TopUpScreen(
         )
     }
 
-
     // Success Dialog
     if (showSuccessDialog) {
         SuccessDialog(
@@ -292,6 +288,65 @@ fun TopUpScreen(
             },
         )
     }
+}
+
+@Composable
+fun ErrorDialog(
+    message: String,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DarkCard,
+        shape = RoundedCornerShape(20.dp),
+        title = { },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(ErrorRed.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = ErrorRed,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                Text(
+                    text = "Oops! Ada Masalah",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = message,
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = ErrorRed),
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text("Coba Lagi", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+    )
 }
 
 @Composable

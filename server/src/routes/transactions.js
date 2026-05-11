@@ -129,7 +129,9 @@ router.get('/:id', authenticateToken, (req, res) => {
 // Create a new top-up order
 // ─────────────────────────────────────────────
 router.post('/', authenticateToken, (req, res) => {
-  const { game_id, package_id, game_user_id, game_zone_id, payment_method } = req.body;
+  const game_id = Number(req.body.game_id);
+  const package_id = Number(req.body.package_id);
+  const { game_user_id, game_zone_id, payment_method } = req.body;
 
   // Validate required fields
   if (!game_id || !package_id || !game_user_id || !payment_method) {
@@ -149,7 +151,7 @@ router.post('/', authenticateToken, (req, res) => {
   // Get game and validate zone_id requirement
   const game = db.prepare('SELECT * FROM games WHERE id = ? AND is_active = 1').get(game_id);
   if (!game) {
-    return res.status(404).json({ success: false, message: 'Game tidak ditemukan' });
+    return res.status(404).json({ success: false, message: `Game dengan ID ${game_id} tidak ditemukan` });
   }
 
   if (game.requires_zone_id && !game_zone_id) {
@@ -164,7 +166,10 @@ router.post('/', authenticateToken, (req, res) => {
     'SELECT * FROM packages WHERE id = ? AND game_id = ? AND is_active = 1'
   ).get(package_id, game_id);
   if (!pkg) {
-    return res.status(404).json({ success: false, message: 'Package tidak tersedia' });
+    return res.status(404).json({ 
+      success: false, 
+      message: `Package (ID: ${package_id}) tidak tersedia untuk Game (ID: ${game_id})` 
+    });
   }
 
   // Create transaction

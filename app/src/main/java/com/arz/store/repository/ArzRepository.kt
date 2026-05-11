@@ -188,6 +188,19 @@ object ArzRepository {
         }
     }
 
+    private fun parseError(e: Throwable): String {
+        if (e is retrofit2.HttpException) {
+            try {
+                val errorBody = e.response()?.errorBody()?.string()
+                val response = com.google.gson.Gson().fromJson(errorBody, Map::class.java)
+                return response["message"] as? String ?: "Terjadi kesalahan server (${e.code()})"
+            } catch (ex: Exception) {
+                return "Error server: ${e.code()}"
+            }
+        }
+        return e.message ?: "Koneksi bermasalah"
+    }
+
     suspend fun createTransaction(
         gameId: Int,
         packageId: Int,
@@ -206,7 +219,7 @@ object ArzRepository {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Result.failure(e)
+            Result.failure(Exception(parseError(e)))
         }
     }
 
