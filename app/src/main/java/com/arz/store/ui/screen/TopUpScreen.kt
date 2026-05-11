@@ -929,14 +929,14 @@ fun SuccessDialog(
                     modifier = Modifier.size(52.dp).scale(scale)
                 )
                 Text(
-                    text = "Pembayaran Berhasil!",
+                    text = "Pembayaran Diterima!",
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "${pkg.label} untuk ${game.name} berhasil diproses",
+                    text = "Pesanan ${pkg.label} sedang menunggu verifikasi admin. Silakan cek status di menu Riwayat.",
                     color = TextSecondary,
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,

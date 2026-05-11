@@ -15,6 +15,9 @@ import com.arz.store.network.LogoutRequest
 import com.arz.store.network.TransactionRequest
 import com.arz.store.utils.toModel
 
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+
 object ArzRepository {
     private val api = ApiClient.apiService
     
@@ -151,6 +154,40 @@ object ArzRepository {
         }
     }
 
+    suspend fun updateProfile(name: String, phone: String): Result<UserProfile> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val res = api.updateProfile("Bearer $token", com.arz.store.network.UpdateProfileRequest(name, phone))
+            if (res.success) Result.success(res.data.toModel())
+            else Result.failure(Exception(res.message ?: "Update failed"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateAvatar(file: java.io.File): Result<UserProfile> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val part = prepareFilePart("avatar", file) ?: return Result.failure(Exception("File invalid"))
+            val res = api.updateAvatar("Bearer $token", part)
+            if (res.success) Result.success(res.data.toModel())
+            else Result.failure(Exception(res.message ?: "Avatar update failed"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun changePassword(current: String, new: String): Result<Unit> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val res = api.changePassword("Bearer $token", com.arz.store.network.ChangePasswordRequest(current, new))
+            if (res.success) Result.success(Unit)
+            else Result.failure(Exception(res.message ?: "Password change failed"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun createTransaction(
         gameId: Int,
         packageId: Int,
@@ -169,6 +206,128 @@ object ArzRepository {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    // --- Admin Functions ---
+
+    suspend fun getAllTransactions(limit: Int = 100): List<Transaction> {
+        val token = authToken ?: return emptyList()
+        return try {
+            val res = api.getAllTransactions("Bearer $token", all = true, limit = limit)
+            if (res.success) res.data.map { it.toModel() } else emptyList()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    suspend fun updateTransactionStatus(id: String, status: String, notes: String? = null): Result<Transaction> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val req = com.arz.store.network.TransactionStatusRequest(status, notes)
+            val res = api.updateTransactionStatus("Bearer $token", id, req)
+            if (res.success) {
+                Result.success(res.data.toModel())
+            } else {
+                Result.failure(Exception(res.message ?: "Unknown error"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteGame(id: Int): Result<Unit> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val res = api.deleteGame("Bearer $token", id)
+            if (res.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(res.message ?: "Delete failed"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    // Helper to create Part
+    fun createPartFromString(string: String): okhttp3.RequestBody {
+        return string.toRequestBody("text/plain".toMediaTypeOrNull())
+    }
+
+    fun prepareFilePart(partName: String, file: java.io.File?): okhttp3.MultipartBody.Part? {
+        if (file == null) return null
+        val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), file)
+        return okhttp3.MultipartBody.Part.createFormData(partName, file!!.name, requestFile)
+    }
+
+    suspend fun createGame(
+        name: String, slug: String, categoryId: Int,
+        description: String?, gradientStart: String?, gradientEnd: String?, accentColor: String?,
+        isPopular: Boolean, isNew: Boolean, requiresZoneId: Boolean, sortOrder: Int,
+        iconFile: java.io.File?, bannerFile: java.io.File?
+    ): Result<GameProduct> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val res = api.createGame(
+                "Bearer $token",
+                createPartFromString(name),
+                createPartFromString(slug),
+                createPartFromString(categoryId.toString()),
+                description?.let { createPartFromString(it) },
+                gradientStart?.let { createPartFromString(it) },
+                gradientEnd?.let { createPartFromString(it) },
+                accentColor?.let { createPartFromString(it) },
+                createPartFromString(if (isPopular) "1" else "0"),
+                createPartFromString(if (isNew) "1" else "0"),
+                createPartFromString(if (requiresZoneId) "1" else "0"),
+                createPartFromString(sortOrder.toString()),
+                prepareFilePart("icon", iconFile),
+                prepareFilePart("banner", bannerFile)
+            )
+            if (res.success) {
+                Result.success(res.data.toModel())
+            } else {
+                Result.failure(Exception(res.message ?: "Failed to create game"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createPackage(
+        gameId: Int, label: String, amount: Int, bonus: Int, price: Long, isPopular: Boolean
+    ): Result<TopUpPackage> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val req = mapOf(
+                "game_id" to gameId,
+                "label" to label,
+                "amount" to amount,
+                "bonus" to bonus,
+                "price" to price,
+                "is_popular" to isPopular
+            )
+            val res = api.createPackage("Bearer $token", req)
+            if (res.success) Result.success(res.data.toModel())
+            else Result.failure(Exception(res.message ?: "Gagal membuat package"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deletePackage(id: Int): Result<Unit> {
+        val token = authToken ?: return Result.failure(Exception("Not logged in"))
+        return try {
+            val res = api.deletePackage("Bearer $token", id)
+            if (res.success) Result.success(Unit)
+            else Result.failure(Exception(res.message ?: "Gagal menghapus package"))
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

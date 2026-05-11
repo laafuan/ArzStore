@@ -44,6 +44,12 @@ fun String?.getDrawableId(): Int {
         "banner_lol" -> R.drawable.banner_lol
         "logo_cod" -> R.drawable.logo_cod
         "banner_codm" -> R.drawable.banner_codm
+        "fc_logo" -> R.drawable.fc_logo
+        "banner_fc" -> R.drawable.banner_fc
+        "mcgg_logo" -> R.drawable.mcgg_logo
+        "banner_mcgg" -> R.drawable.banner_mcgg
+        "logo_roblox" -> R.drawable.logo_roblox
+        "banner_roblox" -> R.drawable.banner_roblox
         "logo_arz" -> R.drawable.logo_arz
         else -> R.drawable.ic_placeholder
     }
@@ -101,17 +107,24 @@ fun TransactionDto.toModel(): Transaction {
         "success" -> "Berhasil"
         "failed" -> "Gagal"
         "processing" -> "Diproses"
-        else -> "Menunggu"
+        else -> "Menunggu Verifikasi"
     }
 
     return Transaction(
         id = this.id,
         gameId = this.gameId,
         gameName = this.gameName ?: "Unknown Game",
+        packageId = this.packageId,
         packageLabel = this.packageLabel ?: "${this.amount}",
+        gameUserId = this.gameUserId,
+        gameZoneId = this.gameZoneId,
+        paymentMethod = this.paymentMethod,
+        gameIconUrl = if (this.gameIconUrl?.startsWith("@drawable/") == true) null else this.gameIconUrl,
+        iconResId = this.gameIconUrl.getDrawableId(),
         price = this.price,
         date = this.createdAt.take(10), // Simple substring for date
         status = statusText,
+        rawStatus = this.status,
         statusColor = statusColor
     )
 }

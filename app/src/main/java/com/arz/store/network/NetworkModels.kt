@@ -78,7 +78,8 @@ data class TransactionDto(
     @SerializedName("status") val status: String,
     @SerializedName("created_at") val createdAt: String,
     @SerializedName("game_name") val gameName: String?,
-    @SerializedName("package_label") val packageLabel: String?
+    @SerializedName("package_label") val packageLabel: String?,
+    @SerializedName("game_icon_url") val gameIconUrl: String?
 )
 
 data class LoginRequest(
@@ -112,11 +113,26 @@ data class CategoryDto(
 )
 
 data class UserDto(
-    @SerializedName("id") val id: Int,
+    @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
     @SerializedName("email") val email: String,
     @SerializedName("phone") val phone: String?,
     @SerializedName("role") val role: String,
     @SerializedName("avatar_url") val avatarUrl: String?,
     @SerializedName("is_active") val isActive: Int
+)
+
+data class UpdateProfileRequest(
+    @SerializedName("name") val name: String,
+    @SerializedName("phone") val phone: String
+)
+
+data class ChangePasswordRequest(
+    @SerializedName("current_password") val current: String,
+    @SerializedName("new_password") val new: String
+)
+
+data class TransactionStatusRequest(
+    @SerializedName("status") val status: String,
+    @SerializedName("notes") val notes: String? = null
 )

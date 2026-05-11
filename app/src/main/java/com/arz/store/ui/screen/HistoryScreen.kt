@@ -42,7 +42,13 @@ data class HistoryItem(
 fun HistoryScreen(viewModel: MainViewModel) {
     
     LaunchedEffect(Unit) {
-        viewModel.loadTransactions()
+        viewModel.startPollingTransactions()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.stopPollingTransactions()
+        }
     }
 
     val historyItems by viewModel.transactions.collectAsState()
@@ -99,7 +105,7 @@ fun HistoryCard(item: com.arz.store.model.Transaction) {
             modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Game icon (Fallback)
+            // Game icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -107,12 +113,21 @@ fun HistoryCard(item: com.arz.store.model.Transaction) {
                     .background(Color(0xFF1A2035)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    Icons.Filled.EmojiEvents,
-                    contentDescription = null,
-                    tint = AccentCyan,
-                    modifier = Modifier.size(24.dp)
-                )
+                if (item.gameIconUrl != null) {
+                    AsyncImage(
+                        model = item.gameIconUrl,
+                        contentDescription = item.gameName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = item.iconResId),
+                        contentDescription = item.gameName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))

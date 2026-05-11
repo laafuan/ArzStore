@@ -16,7 +16,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+
 class MainViewModel : ViewModel() {
+    private var transactionPollingJob: Job? = null
     
     private val _isLoggedIn = MutableStateFlow(ArzRepository.hasToken())
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
@@ -107,11 +111,42 @@ class MainViewModel : ViewModel() {
         }
     }
     
+    fun startPollingTransactions() {
+        transactionPollingJob?.cancel()
+        transactionPollingJob = viewModelScope.launch {
+            while (true) {
+                try {
+                    _transactions.value = ArzRepository.getTransactions()
+                } catch (e: Exception) {
+                    // Silent fail
+                }
+                delay(5000)
+            }
+        }
+    }
+
+    fun stopPollingTransactions() {
+        transactionPollingJob?.cancel()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopPollingTransactions()
+    }
+
     fun loadTransactions() {
         viewModelScope.launch {
             _transactions.value = ArzRepository.getTransactions()
         }
     }
+
+    fun loadGames() {
+        viewModelScope.launch {
+            _games.value = ArzRepository.getGames()
+        }
+    }
+
+    fun fetchGames() = loadGames()
 
     fun createTransaction(
         gameId: Int,
@@ -125,6 +160,47 @@ class MainViewModel : ViewModel() {
             val result = ArzRepository.createTransaction(
                 gameId, packageId, gameUserId, gameZoneId, paymentMethod
             )
+            if (result.isSuccess) {
+                onResult(true, null)
+            } else {
+                onResult(false, result.exceptionOrNull()?.message)
+            }
+        }
+    }
+
+    fun updateProfile(name: String, phone: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = ArzRepository.updateProfile(name, phone)
+            _isLoading.value = false
+            if (result.isSuccess) {
+                _userProfile.value = result.getOrNull()
+                onResult(true, null)
+            } else {
+                onResult(false, result.exceptionOrNull()?.message)
+            }
+        }
+    }
+
+    fun updateAvatar(file: java.io.File, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = ArzRepository.updateAvatar(file)
+            _isLoading.value = false
+            if (result.isSuccess) {
+                _userProfile.value = result.getOrNull()
+                onResult(true, null)
+            } else {
+                onResult(false, result.exceptionOrNull()?.message)
+            }
+        }
+    }
+
+    fun changePassword(current: String, new: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = ArzRepository.changePassword(current, new)
+            _isLoading.value = false
             if (result.isSuccess) {
                 onResult(true, null)
             } else {

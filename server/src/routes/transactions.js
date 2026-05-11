@@ -10,12 +10,19 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const VALID_PAYMENT_METHODS = ['Dana', 'GoPay', 'OVO', 'QRIS', 'Bank Transfer'];
 const VALID_STATUSES = ['pending', 'processing', 'success', 'failed'];
 
-function formatTx(tx) {
+function buildImageUrl(req, relPath) {
+  if (!relPath) return null;
+  if (relPath.startsWith('http') || relPath.startsWith('@drawable/')) return relPath;
+  return `${req.protocol}://${req.get('host')}/uploads/${relPath}`;
+}
+
+function formatTx(req, tx) {
   return {
     ...tx,
     price: Number(tx.price),
     amount: Number(tx.amount),
     bonus: Number(tx.bonus),
+    game_icon_url: buildImageUrl(req, tx.game_icon_url),
   };
 }
 
@@ -77,7 +84,7 @@ router.get('/', authenticateToken, (req, res) => {
 
   res.json({
     success: true,
-    data: transactions.map(formatTx),
+    data: transactions.map(t => formatTx(req, t)),
     pagination: { page: parseInt(page), limit: parseInt(limit), total },
   });
 });
@@ -114,7 +121,7 @@ router.get('/:id', authenticateToken, (req, res) => {
     return res.status(403).json({ success: false, message: 'Akses ditolak' });
   }
 
-  res.json({ success: true, data: formatTx(tx) });
+  res.json({ success: true, data: formatTx(req, tx) });
 });
 
 // ─────────────────────────────────────────────
@@ -174,9 +181,6 @@ router.post('/', authenticateToken, (req, res) => {
     payment_method, pkg.amount, pkg.bonus, pkg.price
   );
 
-  // Simulate async processing: set to 'success' after creation
-  // In production, you'd integrate with a payment gateway here
-  db.prepare("UPDATE transactions SET status='success', updated_at=datetime('now') WHERE id=?").run(txId);
 
   const tx = db.prepare(`
     SELECT t.*, g.name as game_name, p.label as package_label
@@ -189,7 +193,7 @@ router.post('/', authenticateToken, (req, res) => {
   res.status(201).json({
     success: true,
     message: 'Transaksi berhasil dibuat',
-    data: formatTx(tx),
+    data: formatTx(req, tx),
   });
 });
 
@@ -219,7 +223,7 @@ router.patch('/:id/status', authenticateToken, requireAdmin, (req, res) => {
   `).run(status, notes || null, req.params.id);
 
   const updated = db.prepare('SELECT * FROM transactions WHERE id = ?').get(req.params.id);
-  res.json({ success: true, data: formatTx(updated) });
+  res.json({ success: true, data: formatTx(req, updated) });
 });
 
 // ─────────────────────────────────────────────

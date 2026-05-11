@@ -2,6 +2,7 @@ package com.arz.store
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
@@ -18,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.arz.store.model.GameProduct
 import com.arz.store.ui.MainViewModel
@@ -46,6 +49,11 @@ sealed class Screen {
     data class TopUp(val game: GameProduct) : Screen()
     object Login : Screen()
     object Register : Screen()
+    object AdminDashboard : Screen()
+    object AdminTransactions : Screen()
+    object AdminGames : Screen()
+    data class AdminPackages(val game: GameProduct) : Screen()
+    object EditProfile : Screen()
 }
 
 enum class BottomNavDestination(
@@ -61,7 +69,9 @@ enum class BottomNavDestination(
 @Composable
 fun ArzStoreApp() {
     val viewModel: MainViewModel = viewModel()
+    val adminViewModel: com.arz.store.ui.AdminViewModel = viewModel()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val userProfile by viewModel.userProfile.collectAsState()
 
     var currentNavDestination by remember { mutableStateOf(BottomNavDestination.HOME) }
     var currentScreen by remember { mutableStateOf<Screen>(if (isLoggedIn) Screen.Home else Screen.Login) }
@@ -87,6 +97,7 @@ fun ArzStoreApp() {
             if (showBottomNav) {
                 ArzBottomNavBar(
                     currentDestination = currentNavDestination,
+                    isAdmin = userProfile?.role == "admin",
                     onDestinationChange = { currentNavDestination = it },
                 )
             }
@@ -100,6 +111,22 @@ fun ArzStoreApp() {
                     bottom = if (showBottomNav) innerPadding.calculateBottomPadding() else 0.dp,
                 )
         ) {
+            // Handle System Back Press
+            BackHandler(enabled = currentScreen !is Screen.Home || currentNavDestination != BottomNavDestination.HOME) {
+                when {
+                    currentScreen is Screen.Register -> currentScreen = Screen.Login
+                    currentScreen is Screen.TopUp -> currentScreen = Screen.Home
+                    currentScreen is Screen.AdminDashboard -> currentScreen = Screen.Home
+                    currentScreen is Screen.AdminTransactions -> currentScreen = Screen.Home
+                    currentScreen is Screen.AdminGames -> currentScreen = Screen.Home
+                    currentScreen is Screen.AdminPackages -> currentScreen = Screen.AdminGames
+                    currentScreen is Screen.EditProfile -> currentScreen = Screen.Home
+                    currentScreen is Screen.Home && currentNavDestination != BottomNavDestination.HOME -> {
+                        currentNavDestination = BottomNavDestination.HOME
+                    }
+                }
+            }
+
             AnimatedContent(
                 targetState = currentScreen,
                 transitionSpec = {
@@ -133,15 +160,28 @@ fun ArzStoreApp() {
                         onNavigateToLogin = { currentScreen = Screen.Login }
                     )
                     is Screen.Home -> {
+                        val isAdmin = userProfile?.role == "admin"
                         when (currentNavDestination) {
-                            BottomNavDestination.HOME -> HomeScreen(
-                                viewModel = viewModel,
-                                onGameClick = { game ->
-                                    currentScreen = Screen.TopUp(game)
+                            BottomNavDestination.HOME -> {
+                                if (isAdmin) {
+                                    com.arz.store.ui.screen.AdminDashboardScreen(
+                                        onNavigateToTransactions = { currentScreen = Screen.AdminTransactions },
+                                        onNavigateToGames = { currentScreen = Screen.AdminGames },
+                                        onBack = null
+                                    )
+                                } else {
+                                    HomeScreen(
+                                        viewModel = viewModel,
+                                        onGameClick = { game -> currentScreen = Screen.TopUp(game) }
+                                    )
                                 }
-                            )
+                            }
                             BottomNavDestination.HISTORY -> com.arz.store.ui.screen.HistoryScreen(viewModel)
-                            BottomNavDestination.PROFILE -> ProfileScreen(viewModel = viewModel)
+                            BottomNavDestination.PROFILE -> ProfileScreen(
+                                viewModel = viewModel,
+                                onNavigateToHistory = { currentNavDestination = BottomNavDestination.HISTORY },
+                                onEditProfile = { currentScreen = Screen.EditProfile }
+                            )
                         }
                     }
                     is Screen.TopUp -> {
@@ -149,6 +189,41 @@ fun ArzStoreApp() {
                             game = screen.game,
                             viewModel = viewModel,
                             onBack = { currentScreen = Screen.Home },
+                        )
+                    }
+                    is Screen.AdminDashboard -> {
+                        com.arz.store.ui.screen.AdminDashboardScreen(
+                            onNavigateToTransactions = { currentScreen = Screen.AdminTransactions },
+                            onNavigateToGames = { currentScreen = Screen.AdminGames },
+                            onBack = { currentScreen = Screen.Home }
+                        )
+                    }
+                    is Screen.AdminTransactions -> {
+                        com.arz.store.ui.screen.AdminTransactionsScreen(
+                            viewModel = adminViewModel,
+                            onBack = { currentScreen = Screen.Home }
+                        )
+                    }
+                    is Screen.AdminGames -> {
+                        com.arz.store.ui.screen.AdminGamesScreen(
+                            adminViewModel = adminViewModel,
+                            mainViewModel = viewModel,
+                            onNavigateToPackages = { game -> currentScreen = Screen.AdminPackages(game) },
+                            onBack = { currentScreen = Screen.Home }
+                        )
+                    }
+                    is Screen.AdminPackages -> {
+                        com.arz.store.ui.screen.AdminPackagesScreen(
+                            game = screen.game,
+                            adminViewModel = adminViewModel,
+                            mainViewModel = viewModel,
+                            onBack = { currentScreen = Screen.AdminGames }
+                        )
+                    }
+                    is Screen.EditProfile -> {
+                        com.arz.store.ui.screen.EditProfileScreen(
+                            viewModel = viewModel,
+                            onBack = { currentScreen = Screen.Home }
                         )
                     }
                 }
@@ -160,6 +235,7 @@ fun ArzStoreApp() {
 @Composable
 fun ArzBottomNavBar(
     currentDestination: BottomNavDestination,
+    isAdmin: Boolean,
     onDestinationChange: (BottomNavDestination) -> Unit,
 ) {
     NavigationBar(
@@ -170,24 +246,32 @@ fun ArzBottomNavBar(
     ) {
         BottomNavDestination.entries.forEach { destination ->
             val isSelected = destination == currentDestination
+            val label = if (isAdmin && destination == BottomNavDestination.HOME) "Dashboard" else destination.label
+            val icon = if (isAdmin && destination == BottomNavDestination.HOME) Icons.Filled.GridView else destination.unselectedIcon
+            val selectedIcon = if (isAdmin && destination == BottomNavDestination.HOME) Icons.Filled.GridView else destination.selectedIcon
+
             NavigationBarItem(
                 selected = isSelected,
                 onClick = { onDestinationChange(destination) },
                 icon = {
                     Icon(
-                        imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-                        contentDescription = destination.label,
+                        if (isSelected) selectedIcon else icon,
+                        contentDescription = label,
                     )
                 },
                 label = {
-                    Text(destination.label)
+                    Text(
+                        text = label,
+                        fontSize = 10.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    )
                 },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = AccentCyan,
+                    unselectedIconColor = TextSecondary,
                     selectedTextColor = AccentCyan,
-                    unselectedIconColor = TextMuted,
-                    unselectedTextColor = TextMuted,
-                    indicatorColor = AccentCyan.copy(alpha = 0.12f),
+                    unselectedTextColor = TextSecondary,
+                    indicatorColor = Color.Transparent,
                 )
             )
         }

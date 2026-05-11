@@ -187,6 +187,27 @@ const allPackages = {
     { label: '1800 UC', amount: 1800, bonus: 0, price: 429000, is_popular: 0, sort_order: 5 },
     { label: '3850 UC', amount: 3850, bonus: 0, price: 859000, is_popular: 0, sort_order: 6 },
   ],
+  'fc-25': [
+    { label: '100 FC Points',  amount: 100,  bonus: 0,   price: 15000,  is_popular: 0, sort_order: 1 },
+    { label: '500 FC Points',  amount: 500,  bonus: 25,  price: 75000,  is_popular: 0, sort_order: 2 },
+    { label: '1050 FC Points', amount: 1050, bonus: 50,  price: 149000, is_popular: 1, sort_order: 3 },
+    { label: '2800 FC Points', amount: 2800, bonus: 200, price: 399000, is_popular: 0, sort_order: 4 },
+    { label: '5750 FC Points', amount: 5750, bonus: 500, price: 799000, is_popular: 0, sort_order: 5 },
+  ],
+  'magic-chess-go-go': [
+    { label: '50 DM Points',   amount: 50,   bonus: 0,   price: 10000,  is_popular: 0, sort_order: 1 },
+    { label: '100 DM Points',  amount: 100,  bonus: 5,   price: 19000,  is_popular: 0, sort_order: 2 },
+    { label: '250 DM Points',  amount: 250,  bonus: 15,  price: 45000,  is_popular: 1, sort_order: 3 },
+    { label: '500 DM Points',  amount: 500,  bonus: 40,  price: 89000,  is_popular: 0, sort_order: 4 },
+    { label: '1000 DM Points', amount: 1000, bonus: 100, price: 175000, is_popular: 0, sort_order: 5 },
+  ],
+  'roblox': [
+    { label: '400 Robux',      amount: 400,  bonus: 0,   price: 79000,  is_popular: 0, sort_order: 1 },
+    { label: '800 Robux',      amount: 800,  bonus: 0,   price: 159000, is_popular: 1, sort_order: 2 },
+    { label: '1700 Robux',     amount: 1700, bonus: 0,   price: 329000, is_popular: 0, sort_order: 3 },
+    { label: '4500 Robux',     amount: 4500, bonus: 0,   price: 799000, is_popular: 0, sort_order: 4 },
+    { label: '10000 Robux',    amount: 10000,bonus: 0,   price: 1599000,is_popular: 0, sort_order: 5 },
+  ],
   // Default packages for games without specific packages
   '_default': [
     { label: 'Starter Pack', amount: 100,  bonus: 0,   price: 15000,  is_popular: 0, sort_order: 1 },

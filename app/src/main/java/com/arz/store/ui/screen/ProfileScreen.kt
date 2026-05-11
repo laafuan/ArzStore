@@ -1,8 +1,11 @@
 package com.arz.store.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountBalance
@@ -26,13 +29,18 @@ import com.arz.store.ui.theme.*
 import com.arz.store.ui.MainViewModel
 
 @Composable
-fun ProfileScreen(viewModel: MainViewModel) {
+fun ProfileScreen(
+    viewModel: MainViewModel,
+    onNavigateToHistory: () -> Unit,
+    onEditProfile: () -> Unit
+) {
     val userProfile by viewModel.userProfile.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
+            .verticalScroll(rememberScrollState())
     ) {
         // Header
         Box(
@@ -73,14 +81,39 @@ fun ProfileScreen(viewModel: MainViewModel) {
 
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileMenuItem(icon = Icons.Filled.AccountBalance, label = "Riwayat Transaksi", subtitle = "Lihat semua transaksi")
-            ProfileMenuItem(icon = Icons.Filled.Settings, label = "Pengaturan Akun", subtitle = "Email, password, notifikasi")
-            ProfileMenuItem(icon = Icons.Filled.CardGiftcard, label = "Program Referral", subtitle = "Ajak teman & dapatkan bonus")
-            ProfileMenuItem(icon = Icons.Filled.Help, label = "Bantuan & FAQ", subtitle = "Pusat bantuan")
-            ProfileMenuItem(icon = Icons.Filled.Description, label = "Syarat & Ketentuan", subtitle = "")
+            ProfileMenuItem(
+                icon = Icons.Filled.AccountBalance,
+                label = "Riwayat Transaksi",
+                subtitle = "Lihat semua transaksi",
+                onClick = onNavigateToHistory
+            )
+            ProfileMenuItem(
+                icon = Icons.Filled.Settings,
+                label = "Pengaturan Akun",
+                subtitle = "Email, password, notifikasi",
+                onClick = onEditProfile
+            )
+            ProfileMenuItem(
+                icon = Icons.Filled.CardGiftcard,
+                label = "Program Referral",
+                subtitle = "Ajak teman & dapatkan bonus",
+                onClick = { /* TODO */ }
+            )
+            ProfileMenuItem(
+                icon = Icons.Filled.Help,
+                label = "Bantuan & FAQ",
+                subtitle = "Pusat bantuan",
+                onClick = { /* TODO */ }
+            )
+            ProfileMenuItem(
+                icon = Icons.Filled.Description,
+                label = "Syarat & Ketentuan",
+                subtitle = "",
+                onClick = { /* TODO */ }
+            )
+
 
             Spacer(modifier = Modifier.height(16.dp))
-
             Button(
                 onClick = { viewModel.logout() },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -89,14 +122,17 @@ fun ProfileScreen(viewModel: MainViewModel) {
             ) {
                 Text("Keluar", color = ErrorRed, fontWeight = FontWeight.SemiBold)
             }
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
 @Composable
-fun ProfileMenuItem(icon: ImageVector, label: String, subtitle: String) {
+fun ProfileMenuItem(icon: ImageVector, label: String, subtitle: String, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = RoundedCornerShape(12.dp),
     ) {

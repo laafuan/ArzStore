@@ -41,10 +41,17 @@ data class Transaction(
     val id: String,
     val gameId: Int,
     val gameName: String,
+    val packageId: Int,
     val packageLabel: String,
+    val gameUserId: String,
+    val gameZoneId: String?,
+    val paymentMethod: String,
+    val gameIconUrl: String?,
+    val iconResId: Int = com.arz.store.R.drawable.ic_placeholder,
     val price: Long,
     val date: String,
-    val status: String,
+    val status: String,      // Display text (e.g., "Berhasil")
+    val rawStatus: String,   // Original status (e.g., "success")
     val statusColor: Color,
 )
 
@@ -56,7 +63,7 @@ data class CategoryItem(
 )
 
 data class UserProfile(
-    val id: Int,
+    val id: String,
     val name: String,
     val email: String,
     val phone: String?,
